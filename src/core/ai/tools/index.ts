@@ -121,12 +121,24 @@ export function createTools(db: LightDB, kbId: string): {
         const allEdges: Array<Record<string, unknown>> = [];
 
         if (maxDepth > 0) {
-          for (const node of matched) {
-            const neighbors = db.graphNode.findNeighbors(node.id, kbId);
-            const nodeEdges = db.graphEdge.findByNode(node.id, kbId);
+          // BFS queue: [nodeId, depth]
+          const queue: Array<[string, number]> = matched.map((n) => [n.id, 0]);
+
+          while (queue.length > 0) {
+            const [currentId, depth] = queue.shift()!;
+            if (depth >= maxDepth) continue;
+
+            const neighbors = db.graphNode.findNeighbors(currentId, kbId);
+            const nodeEdges = db.graphEdge.findByNode(currentId, kbId);
+
             for (const n of neighbors) {
-              if (!seen.has(n.id)) { seen.add(n.id); allNodes.push(n); }
+              if (!seen.has(n.id)) {
+                seen.add(n.id);
+                allNodes.push(n);
+                queue.push([n.id, depth + 1]);
+              }
             }
+
             for (const e of nodeEdges) {
               if (!allEdges.some((x) => x.id === e.id)) allEdges.push(e);
             }

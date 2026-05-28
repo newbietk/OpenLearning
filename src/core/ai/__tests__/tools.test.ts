@@ -80,6 +80,14 @@ describe("tools", () => {
     expect(parsed.edges.length).toBeGreaterThan(0);
   });
 
+  it("get_community returns connected component", async () => {
+    const { execute } = createTools(makeMockDb() as any, "kb1");
+    const result = await execute("get_community", { nodeLabel: "React" }, "tc_comm");
+    const parsed = JSON.parse(result.output);
+    expect(parsed.members.length).toBeGreaterThan(0);
+    expect(parsed.nodeLabel).toBe("React");
+  });
+
   it("graph_stats returns counts", async () => {
     const { execute } = createTools(makeMockDb() as any, "kb1");
     const result = await execute("graph_stats", {}, "tc5");
