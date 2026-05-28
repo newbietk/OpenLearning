@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import type { Message, ToolDef } from "../types";
 
-// We test the OpenAI provider which also covers DeepSeek (same API shape)
+// We test OpenAI, Anthropic, and DeepSeek providers
 
 describe("OpenAI Provider", () => {
   let createOpenAIProvider: typeof import("../providers/openai").createOpenAIProvider;
@@ -290,6 +290,64 @@ describe("Anthropic Provider", () => {
     const [, init] = mockFetch.mock.calls[0];
     expect(init.headers["x-api-key"]).toBe("sk-ant-test");
     expect(init.headers["anthropic-version"]).toBe("2023-06-01");
+  });
+});
+
+describe("DeepSeek Provider", () => {
+  let createDeepSeekProvider: typeof import("../providers/deepseek").createDeepSeekProvider;
+  let mockFetch: ReturnType<typeof vi.fn>;
+
+  beforeAll(async () => {
+    const mod = await import("../providers/deepseek");
+    createDeepSeekProvider = mod.createDeepSeekProvider;
+  });
+
+  beforeEach(() => {
+    mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+  });
+
+  it("routes to DeepSeek base URL by default", async () => {
+    const provider = createDeepSeekProvider("sk-ds-test");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body: makeStream([{ choices: [{ delta: {}, finish_reason: "stop" }] }]),
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for await (const _ of provider.chat([{ role: "user", content: "hi" }])) {}
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://api.deepseek.com/v1/chat/completions");
+  });
+
+  it("uses deepseek-chat as default model", async () => {
+    const provider = createDeepSeekProvider("sk-ds-test");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body: makeStream([{ choices: [{ delta: {}, finish_reason: "stop" }] }]),
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for await (const _ of provider.chat([{ role: "user", content: "hi" }])) {}
+
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse(init.body);
+    expect(body.model).toBe("deepseek-chat");
+  });
+
+  it("accepts custom model", async () => {
+    const provider = createDeepSeekProvider("sk-ds-test", "deepseek-reasoner");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body: makeStream([{ choices: [{ delta: {}, finish_reason: "stop" }] }]),
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for await (const _ of provider.chat([{ role: "user", content: "hi" }])) {}
+
+    const [, init] = mockFetch.mock.calls[0];
+    expect(JSON.parse(init.body).model).toBe("deepseek-reasoner");
   });
 });
 
