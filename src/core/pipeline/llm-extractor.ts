@@ -163,6 +163,7 @@ export function createLlmExtractor(provider: ModelProvider): LlmExtractor {
           metadata: {
             file_type: en.file_type || "concept",
             source_file: en.source_file,
+            source_location: en.source_location ?? null,
             source_url: en.source_url ?? null,
             author: en.author ?? null,
             contributor: en.contributor ?? null,
@@ -174,7 +175,7 @@ export function createLlmExtractor(provider: ModelProvider): LlmExtractor {
         source: ee.source,
         target: ee.target,
         relation: ee.relation,
-        confidence: ee.confidence === "EXTRACTED" ? ("EXTRACTED" as const) : ("INFERRED" as const),
+        confidence: ee.confidence as "EXTRACTED" | "INFERRED" | "AMBIGUOUS",
       }));
 
       const result: ExtractionResult = { nodes, edges, hyperedges: extracted.hyperedges };

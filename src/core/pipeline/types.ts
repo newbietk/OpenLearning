@@ -56,7 +56,7 @@ export interface ParsedChunk {
   chunkIndex: number;
   content: string;
   nodes: { label: string; type: string; metadata?: Record<string, unknown> }[];
-  edges: { source: string; target: string; relation: string; confidence: 'EXTRACTED' | 'INFERRED' }[];
+  edges: { source: string; target: string; relation: string; confidence: 'EXTRACTED' | 'INFERRED' | 'AMBIGUOUS' }[];
 }
 
 export interface ParseInput {
@@ -93,6 +93,11 @@ export interface SearchResult {
   edges: GraphEdgeRecord[];
   chunks: DocumentChunkRecord[];
   score: number;
+}
+
+export interface MinHashLSH {
+  insert(key: string, minhash: number[]): void;
+  query(minhash: number[]): string[];
 }
 
 export interface SearchOptions {
