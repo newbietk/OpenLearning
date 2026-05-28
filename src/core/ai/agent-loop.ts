@@ -11,7 +11,7 @@ export async function* runAgentLoop(
 ): AsyncIterable<AgentEvent> {
   const messages: Message[] = [
     {
-      role: "user",
+      role: "system",
       content: `You are a knowledge base assistant. Use the provided tools to search and answer questions based on the knowledge graph. Always cite sources when possible. If you cannot find relevant information, say so honestly. Current KB ID: ${config.kbId}`,
     },
     ...history,

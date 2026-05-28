@@ -96,7 +96,7 @@ describe("agent-loop", () => {
       if (ev.type === "tool_call") toolCallCount++;
     }
 
-    expect(toolCallCount).toBeLessThanOrEqual(5);
+    expect(toolCallCount).toBe(5);
   });
 
   it("handles tool execution errors gracefully", async () => {
