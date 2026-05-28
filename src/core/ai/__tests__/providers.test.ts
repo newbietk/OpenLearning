@@ -309,6 +309,7 @@ describe("DeepSeek Provider", () => {
 
   it("routes to DeepSeek base URL by default", async () => {
     const provider = createDeepSeekProvider("sk-ds-test");
+    expect(provider.name).toBe("deepseek");
     mockFetch.mockResolvedValueOnce({
       ok: true,
       body: makeStream([{ choices: [{ delta: {}, finish_reason: "stop" }] }]),

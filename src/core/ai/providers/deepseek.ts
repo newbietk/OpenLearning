@@ -6,5 +6,6 @@ export function createDeepSeekProvider(
   apiKey: string,
   model: string = "deepseek-chat",
 ): ModelProvider {
-  return createOpenAIProvider(apiKey, model, "https://api.deepseek.com");
+  const provider = createOpenAIProvider(apiKey, model, "https://api.deepseek.com");
+  return { ...provider, name: "deepseek" };
 }
