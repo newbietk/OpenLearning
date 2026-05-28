@@ -179,6 +179,120 @@ function toolCallDelta(
   return delta({ tool_calls: [tcEntry] });
 }
 
+// Anthropic SSE helper
+function makeAnthropicStream(events: Array<{ type: string; [key: string]: unknown }>): ReadableStream {
+  const encoder = new TextEncoder();
+  let index = 0;
+  return new ReadableStream({
+    pull(controller) {
+      if (index >= events.length) {
+        controller.close();
+        return;
+      }
+      const event = events[index];
+      const data = `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+      controller.enqueue(encoder.encode(data));
+      index++;
+    },
+  });
+}
+
+describe("Anthropic Provider", () => {
+  let createAnthropicProvider: typeof import("../providers/anthropic").createAnthropicProvider;
+  let mockFetch: ReturnType<typeof vi.fn>;
+
+  beforeAll(async () => {
+    const mod = await import("../providers/anthropic");
+    createAnthropicProvider = mod.createAnthropicProvider;
+  });
+
+  beforeEach(() => {
+    mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+  });
+
+  it("streams text deltas from Anthropic", async () => {
+    const provider = createAnthropicProvider("sk-ant-test", "claude-sonnet-4-6");
+    const messages = [{ role: "user" as const, content: "Hello" }];
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body: makeAnthropicStream([
+        { type: "message_start", message: { id: "msg_1", role: "assistant", model: "claude-sonnet-4-6", content: [] } },
+        { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+        { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "Hello" } },
+        { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: " world" } },
+        { type: "content_block_stop", index: 0 },
+        { type: "message_delta", delta: { stop_reason: "end_turn" } },
+        { type: "message_stop" },
+      ]),
+    });
+
+    const texts: string[] = [];
+    for await (const chunk of provider.chat(messages)) {
+      if (chunk.type === "text") texts.push(chunk.content!);
+    }
+
+    expect(texts).toEqual(["Hello", " world"]);
+  });
+
+  it("streams tool_use blocks from Anthropic", async () => {
+    const provider = createAnthropicProvider("sk-ant-test");
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body: makeAnthropicStream([
+        { type: "message_start", message: { id: "msg_1", role: "assistant", model: "claude-sonnet-4-6", content: [] } },
+        { type: "content_block_start", index: 0, content_block: { type: "tool_use", id: "tcu_1", name: "search_knowledge", input: {} } },
+        { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: '{"query":"React"}' } },
+        { type: "content_block_stop", index: 0 },
+        { type: "message_delta", delta: { stop_reason: "tool_use" } },
+        { type: "message_stop" },
+      ]),
+    });
+
+    const toolCalls: string[] = [];
+    for await (const chunk of provider.chat([{ role: "user", content: "search" }])) {
+      if (chunk.type === "tool_call") toolCalls.push(chunk.toolCall!.name);
+    }
+
+    expect(toolCalls).toContain("search_knowledge");
+  });
+
+  it("yields error on non-2xx from Anthropic", async () => {
+    const provider = createAnthropicProvider("sk-ant-test");
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      text: async () => '{"error":{"message":"invalid x-api-key"}}',
+    });
+
+    const types: string[] = [];
+    for await (const chunk of provider.chat([{ role: "user", content: "hi" }])) {
+      types.push(chunk.type);
+    }
+    expect(types).toContain("error");
+  });
+
+  it("sends correct headers", async () => {
+    const provider = createAnthropicProvider("sk-ant-test", "claude-sonnet-4-6");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body: makeAnthropicStream([
+        { type: "message_start", message: { id: "msg_1", role: "assistant", model: "claude-sonnet-4-6", content: [] } },
+        { type: "message_delta", delta: { stop_reason: "end_turn" } },
+        { type: "message_stop" },
+      ]),
+    });
+
+    for await (const _ of provider.chat([{ role: "user", content: "hi" }])) {}
+
+    const [, init] = mockFetch.mock.calls[0];
+    expect(init.headers["x-api-key"]).toBe("sk-ant-test");
+    expect(init.headers["anthropic-version"]).toBe("2023-06-01");
+  });
+});
+
 // Helper: convert objects to a readable SSE stream
 function makeStream(chunks: Record<string, unknown>[]): ReadableStream {
   const encoder = new TextEncoder();
