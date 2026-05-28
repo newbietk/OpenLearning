@@ -3,7 +3,7 @@ import type { ModelProvider, Message, ToolDef, StreamChunk } from "../types";
 
 export function createAnthropicProvider(
   apiKey: string,
-  model: string = "claude-sonnet-4-6",
+  model: string = "claude-sonnet-4-20250514",
 ): ModelProvider {
   return {
     name: "anthropic",
