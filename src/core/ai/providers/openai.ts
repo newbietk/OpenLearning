@@ -21,8 +21,18 @@ export function createOpenAIProvider(
         messages: messages.map((m) => ({
           role: m.role,
           content: m.content,
-          ...(m.toolCalls ? { tool_calls: m.toolCalls } : {}),
+          ...(m.toolCalls ? {
+            tool_calls: m.toolCalls.map((tc) => ({
+              id: tc.id,
+              type: "function",
+              function: {
+                name: tc.name,
+                arguments: JSON.stringify(tc.arguments),
+              },
+            })),
+          } : {}),
           ...(m.toolCallId ? { tool_call_id: m.toolCallId } : {}),
+          ...(m.name ? { name: m.name } : {}),
         })),
         stream: true,
       };

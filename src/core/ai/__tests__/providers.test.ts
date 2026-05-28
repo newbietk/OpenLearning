@@ -101,6 +101,45 @@ describe("OpenAI Provider", () => {
     expect(chunks).toContain("error");
   });
 
+  it("serializes tool_calls in message history correctly", async () => {
+    const provider = createOpenAIProvider("sk-test");
+    const messages: Message[] = [
+      { role: "user", content: "Search for React" },
+      {
+        role: "assistant",
+        content: "",
+        toolCalls: [{ id: "tc1", name: "search_knowledge", arguments: { query: "React" } }],
+      },
+      {
+        role: "tool",
+        content: '{"nodes":[]}',
+        toolCallId: "tc1",
+        name: "search_knowledge",
+      },
+      { role: "user", content: "What did you find?" },
+    ];
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body: makeStream([{ choices: [{ delta: {}, finish_reason: "stop" }] }]),
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for await (const _ of provider.chat(messages)) {}
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    const assistantMsg = body.messages[1];
+    expect(assistantMsg.tool_calls[0].type).toBe("function");
+    expect(assistantMsg.tool_calls[0].function.name).toBe("search_knowledge");
+    expect(assistantMsg.tool_calls[0].function.arguments).toBe('{"query":"React"}');
+    // Verify tool message has name and tool_call_id
+    const toolMsg = body.messages[2];
+    expect(toolMsg.role).toBe("tool");
+    expect(toolMsg.name).toBe("search_knowledge");
+    expect(toolMsg.tool_call_id).toBe("tc1");
+  });
+
   it("uses custom baseUrl", async () => {
     const provider = createOpenAIProvider("sk-test", "gpt-4o", "https://custom.api.com");
     mockFetch.mockResolvedValueOnce({
