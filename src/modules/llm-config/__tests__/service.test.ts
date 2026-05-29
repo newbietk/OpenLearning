@@ -57,15 +57,15 @@ function mockLlmDb(): Database {
       deleteSession: () => {},
     },
     llmProvider: {
-      findByUser(externalUserId) {
+      findByUser(externalUserId: string) {
         return providers.filter((p) => p.externalUserId === externalUserId);
       },
-      findEnabled(externalUserId, provider) {
+      findEnabled(externalUserId: string, provider: string) {
         return providers.find(
           (p) => p.externalUserId === externalUserId && p.provider === provider && p.enabled,
         );
       },
-      create(data) {
+      create(data: any) {
         const record: LlmProviderRecord = {
           id: crypto.randomUUID(),
           createdAt: new Date().toISOString(),
@@ -74,16 +74,16 @@ function mockLlmDb(): Database {
         providers.push(record);
         return record;
       },
-      update(id, data) {
+      update(id: string, data: any) {
         const p = providers.find((x) => x.id === id);
         if (p) Object.assign(p, data);
       },
-      delete(id) {
+      delete(id: string) {
         const idx = providers.findIndex((x) => x.id === id);
         if (idx !== -1) providers.splice(idx, 1);
       },
     },
-    transaction: async (fn) => fn(this as unknown as Database),
+    transaction: async (fn: any) => fn({} as Database),
   } as unknown as Database;
 }
 

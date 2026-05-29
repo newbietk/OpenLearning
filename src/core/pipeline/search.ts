@@ -1,4 +1,4 @@
-import type { GraphNodeRecord, GraphEdgeRecord, SearchResult } from "../types";
+import type { GraphNodeRecord, GraphEdgeRecord, SearchResult } from "./types";
 
 // ---------------------------------------------------------------------------
 // Vocabulary helpers (for graphify query expansion)

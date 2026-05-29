@@ -3,7 +3,7 @@ import type { GraphNodeRecord, GraphEdgeRecord, MinHashLSH } from "./types";
 // ─── MinHash / LSH constants ───────────────────────────────────────────────
 
 const HASH_PRIME = 2147483647; // 2^31 - 1
-const HASH_PRIME_BIG = 2147483647n;
+const HASH_PRIME_BIG = BigInt(2147483647);
 const DEFAULT_NUM_PERM = 128;
 const K_GRAM = 3;
 

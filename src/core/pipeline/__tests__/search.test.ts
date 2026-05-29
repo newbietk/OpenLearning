@@ -524,7 +524,7 @@ describe("keywordsSearch", () => {
     const results = keywordsSearch(nodes, edges, "前端", "kb1");
     expect(results.length).toBeGreaterThan(0);
     const hasChineseLabel = results.some((r) =>
-      r.nodes.some((n) => n.label === "前端开发"),
+      r.nodes.some((n: { label: string }) => n.label === "前端开发"),
     );
     expect(hasChineseLabel).toBe(true);
   });

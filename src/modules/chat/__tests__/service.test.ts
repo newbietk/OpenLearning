@@ -53,20 +53,20 @@ function mockChatDb(): Database {
       deleteByKbId: () => {},
     },
     chat: {
-      createSession(data) {
+      createSession(data: any) {
         const s = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...data };
         sessions.push(s);
         return s;
       },
-      findSessionById(id) { return sessions.find((s) => s.id === id); },
-      findSessionsByUser(externalUserId) { return sessions.filter((s) => s.externalUserId === externalUserId); },
-      addMessage(data) {
+      findSessionById(id: string) { return sessions.find((s) => s.id === id); },
+      findSessionsByUser(externalUserId: string) { return sessions.filter((s) => s.externalUserId === externalUserId); },
+      addMessage(data: any) {
         const m = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...data };
         messages.push(m);
         return m;
       },
-      findMessagesBySession(sessionId) { return messages.filter((m) => m.sessionId === sessionId); },
-      deleteSession(id) {
+      findMessagesBySession(sessionId: string) { return messages.filter((m) => m.sessionId === sessionId); },
+      deleteSession(id: string) {
         const sIdx = sessions.findIndex((s) => s.id === id);
         if (sIdx !== -1) sessions.splice(sIdx, 1);
         const toRemove = messages.filter((m) => m.sessionId === id);
@@ -80,7 +80,7 @@ function mockChatDb(): Database {
       update: () => {},
       delete: () => {},
     },
-    transaction: async (fn: any) => fn(this as unknown as Database),
+    transaction: async (fn: any) => fn({} as Database),
   } as unknown as Database;
 }
 

@@ -47,7 +47,7 @@ interface SymbolEdge {
 interface BlockContext {
   name: string;
   depth: number;
-  type: 'class' | 'interface' | 'struct' | 'impl';
+  type: 'class' | 'interface' | 'struct' | 'impl' | 'enum' | 'trait';
 }
 
 interface ExtractionContext {

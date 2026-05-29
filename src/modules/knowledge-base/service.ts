@@ -24,6 +24,7 @@ export interface ImportDocumentInput {
   filePath?: string;
   content?: string;
   sourceUrl?: string;
+  dirPath?: string;
 }
 
 export function createKnowledgeBaseService(db: Database) {
@@ -72,8 +73,14 @@ export function createKnowledgeBaseService(db: Database) {
       try {
         db.document.updateStatus(doc.id, "parsing");
 
-        // Get content
+        // Resolve content
         let content = input.content ?? "";
+        if (!content && input.sourceUrl && !input.filePath) {
+          // Auto-fetch URL content
+          const res = await fetch(input.sourceUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          content = await res.text();
+        }
         if (!content && input.filePath) {
           const fs = await import("node:fs");
           if (!fs.existsSync(input.filePath)) {
@@ -81,12 +88,12 @@ export function createKnowledgeBaseService(db: Database) {
           }
           content = fs.readFileSync(input.filePath, "utf-8");
         }
-        if (content.length === 0) {
+        if (!content) {
           throw new Error("No content to parse");
         }
 
         // Detect type → get parser
-        const detectedType = input.sourceUrl
+        const detectedType = input.sourceUrl && !input.filePath
           ? "link"
           : detectType({ fileName: input.filePath, url: input.sourceUrl });
 
@@ -121,7 +128,6 @@ export function createKnowledgeBaseService(db: Database) {
           doc.id,
           input.filePath,
         );
-
         if (graphNodes.length > 0) {
           const inserted = db.graphNode.batchCreate(
             graphNodes.map((n) => ({
@@ -163,6 +169,36 @@ export function createKnowledgeBaseService(db: Database) {
 
     getDocuments(kbId: string): DocumentRecord[] {
       return db.document.findByKbId(kbId);
+    },
+
+    deleteDocument(docId: string): void {
+      db.document.delete(docId);
+    },
+
+    async importFromDirectory(kbId: string, dirPath: string): Promise<DocumentRecord[]> {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      if (!fs.existsSync(dirPath)) throw new Error(`Directory not found: ${dirPath}`);
+
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      const files = entries.filter((e) => e.isFile()).map((e) => e.name);
+
+      const results: DocumentRecord[] = [];
+      for (const fileName of files) {
+        const filePath = path.join(dirPath, fileName);
+        try {
+          const doc = await this.importDocument(kbId, {
+            title: fileName,
+            sourceType: "file",
+            filePath,
+          });
+          results.push(doc);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          log.error("import dir: failed", err instanceof Error ? err : new Error(msg), { filePath });
+        }
+      }
+      return results;
     },
 
     // ── Graph ────────────────────────────────────────────────────────────

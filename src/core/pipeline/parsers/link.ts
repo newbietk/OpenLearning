@@ -198,7 +198,7 @@ function detectFrontmatter(text: string): FrontmatterData | null {
     }
   }
 
-  return properties;
+  return { properties };
 }
 
 // ============================================================================

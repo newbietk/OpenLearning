@@ -40,7 +40,7 @@ describe("OpenAI Provider", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("https://api.openai.com/v1/chat/completions");
-    expect(init.headers!["Authorization"]).toBe("Bearer sk-test");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer sk-test");
   });
 
   it("yields tool_call chunks", async () => {

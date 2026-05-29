@@ -4,130 +4,123 @@ import type { DocumentRecord, GraphNodeRecord, GraphEdgeRecord } from "../../../
 
 // ── mock DB factory ─────────────────────────────────────────────────────────
 
-function mockDb(overrides: Partial<Database> = {}): Database {
+interface ChunkRec { id: string; docId: string; chunkIndex: number; contentText: string; tokenCount: number }
+
+function mockDb(_overrides: Partial<Database> = {}): Database {
   const kbs: KnowledgeBaseRecord[] = [];
   const docs: DocumentRecord[] = [];
-  const chunks: Array<{ id: string; docId: string; chunkIndex: number; contentText: string; tokenCount: number }> = [];
+  const chunks: ChunkRec[] = [];
   const nodes: GraphNodeRecord[] = [];
   const edges: GraphEdgeRecord[] = [];
 
-  // Build db incrementally so transaction can reference it
-  const db: any = {};
-  const rawDb: any = {
+  const rawDb = {
     knowledgeBase: {
-      findById(id) { return kbs.find((k) => k.id === id); },
+      findById(id: string) { return kbs.find((k) => k.id === id); },
       findAll() { return [...kbs]; },
-      findByOwner(ownerId) { return kbs.filter((k) => k.ownerId === ownerId); },
-      findByType(kbType) { return kbs.filter((k) => k.kbType === kbType); },
-      create(data) {
+      findByOwner(ownerId: string) { return kbs.filter((k) => k.ownerId === ownerId); },
+      findByType(kbType: string) { return kbs.filter((k) => k.kbType === kbType); },
+      create(data: any) {
         const record: KnowledgeBaseRecord = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...data };
         kbs.push(record);
         return record;
       },
-      update(id, data) {
+      update(id: string, data: any) {
         const idx = kbs.findIndex((k) => k.id === id);
         if (idx === -1) throw new Error("Not found");
         kbs[idx] = { ...kbs[idx], ...data };
         return kbs[idx];
       },
-      delete(id) {
+      delete(id: string) {
         const idx = kbs.findIndex((k) => k.id === id);
         if (idx !== -1) kbs.splice(idx, 1);
       },
     },
     platformAdmin: {
-      findAll: () => [],
-      findByExternalId: () => undefined,
-      create: () => ({ id: "a1", externalId: "admin1", createdAt: "" }),
-      deleteByExternalId: () => {},
+      findAll: () => [] as Array<{ id: string; externalId: string; createdAt: string }>,
+      findByExternalId: (_externalId: string) => undefined,
+      create: (_externalId: string) => ({ id: "a1", externalId: "admin1", createdAt: "" }),
+      deleteByExternalId: (_externalId: string) => {},
     },
     document: {
-      findById(id) { return docs.find((d) => d.id === id); },
-      findByKbId(kbId) { return docs.filter((d) => d.kbId === kbId); },
-      create(data) {
+      findById(id: string) { return docs.find((d) => d.id === id); },
+      findByKbId(kbId: string) { return docs.filter((d) => d.kbId === kbId); },
+      create(data: any) {
         const record = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), parsedAt: null, ...data } as DocumentRecord;
         docs.push(record);
         return record;
       },
-      updateStatus(id, status, errorMessage) {
+      updateStatus(id: string, status: string, errorMessage: string | null) {
         const d = docs.find((x) => x.id === id);
         if (d) { (d as any).status = status; (d as any).errorMessage = errorMessage ?? null; }
       },
-      delete(id) {
+      delete(id: string) {
         const idx = docs.findIndex((d) => d.id === id);
         if (idx !== -1) docs.splice(idx, 1);
       },
     },
     documentChunk: {
-      findByDocId(docId) { return chunks.filter((c) => c.docId === docId); },
-      batchCreate(data) { data.forEach((c, i) => chunks.push({ id: `ch-${i}`, ...c })); },
-      deleteByDocId(docId) {
+      findByDocId(docId: string) { return chunks.filter((c) => c.docId === docId); },
+      batchCreate(data: any[]) { data.forEach((c: any, i: number) => chunks.push({ id: `ch-${i}`, ...c })); },
+      deleteByDocId(docId: string) {
         const toRemove = chunks.filter((c) => c.docId === docId);
         toRemove.forEach((c) => { const idx = chunks.indexOf(c); if (idx !== -1) chunks.splice(idx, 1); });
       },
     },
     graphNode: {
-      findByKbId(kbId) { return nodes.filter((n) => n.kbId === kbId); },
-      findByLabel(_kbId, label) { return nodes.find((n) => n.label === label); },
-      findNeighbors(nodeId, kbId) {
+      findByKbId(kbId: string) { return nodes.filter((n) => n.kbId === kbId); },
+      findByLabel(_kbId: string, label: string) { return nodes.find((n) => n.label === label); },
+      findNeighbors(nodeId: string, kbId: string) {
         const neighborIds = edges.filter((e) => e.kbId === kbId && e.sourceNodeId === nodeId).map((e) => e.targetNodeId);
         return nodes.filter((n) => neighborIds.includes(n.id));
       },
-      search(kbId, query) {
+      search(kbId: string, query: string) {
         return nodes.filter((n) => n.kbId === kbId && n.label.toLowerCase().includes(query.toLowerCase()));
       },
-      batchCreate(data) {
+      batchCreate(data: any[]) {
         const created: GraphNodeRecord[] = [];
-        data.forEach((n) => {
+        data.forEach((n: any) => {
           const record: GraphNodeRecord = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...n };
           nodes.push(record);
           created.push(record);
         });
         return created;
       },
-      deleteByKbId(kbId) {
+      deleteByKbId(kbId: string) {
         const toRemove = nodes.filter((n) => n.kbId === kbId);
         toRemove.forEach((n) => { const idx = nodes.indexOf(n); if (idx !== -1) nodes.splice(idx, 1); });
       },
     },
     graphEdge: {
-      findByKbId(kbId) { return edges.filter((e) => e.kbId === kbId); },
-      findByNode(nodeId, kbId) {
+      findByKbId(kbId: string) { return edges.filter((e) => e.kbId === kbId); },
+      findByNode(nodeId: string, kbId: string) {
         return edges.filter((e) => e.kbId === kbId && (e.sourceNodeId === nodeId || e.targetNodeId === nodeId));
       },
-      batchCreate(data) { data.forEach((e) => edges.push({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...e })); },
-      deleteByKbId(kbId) {
+      batchCreate(data: any[]) { data.forEach((e: any) => edges.push({ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...e })); },
+      deleteByKbId(kbId: string) {
         const toRemove = edges.filter((e) => e.kbId === kbId);
         toRemove.forEach((e) => { const idx = edges.indexOf(e); if (idx !== -1) edges.splice(idx, 1); });
       },
     },
     chat: {
-      createSession: () => ({ id: "", kbId: "", externalUserId: "", title: "", createdAt: "" }),
-      findSessionById: () => undefined,
-      findSessionsByUser: () => [],
-      addMessage: () => ({ id: "", sessionId: "", role: "user", content: "", toolCalls: null, createdAt: "" }),
-      findMessagesBySession: () => [],
-      deleteSession: () => {},
+      createSession: (_data: any) => ({ id: "", kbId: "", externalUserId: "", title: "", createdAt: "" }),
+      findSessionById: (_id: string) => undefined,
+      findSessionsByUser: (_externalUserId: string) => [] as Array<{ id: string; kbId: string; externalUserId: string; title: string; createdAt: string }>,
+      addMessage: (_data: any) => ({ id: "", sessionId: "", role: "user" as const, content: "", toolCalls: null, createdAt: "" }),
+      findMessagesBySession: (_sessionId: string) => [] as Array<{ id: string; sessionId: string; role: string; content: string; toolCalls: string | null; createdAt: string }>,
+      deleteSession: (_id: string) => {},
     },
     llmProvider: {
-      findByUser: () => [],
-      findEnabled: () => undefined,
-      create: () => ({ id: "", externalUserId: "", provider: "", apiKeyEncrypted: "", baseUrl: null, enabled: true, createdAt: "" }),
-      update: () => {},
-      delete: () => {},
+      findByUser: (_externalUserId: string) => [] as Array<{ id: string; externalUserId: string; provider: string; apiKeyEncrypted: string; baseUrl: string | null; enabled: boolean; createdAt: string }>,
+      findEnabled: (_externalUserId: string, _provider: string) => undefined,
+      create: (_data: any) => ({ id: "", externalUserId: "", provider: "", apiKeyEncrypted: "", baseUrl: null, enabled: true, createdAt: "" }),
+      update: (_id: string, _data: any) => {},
+      delete: (_id: string) => {},
     },
-    ...overrides,
   };
-  db.knowledgeBase = rawDb.knowledgeBase!;
-  db.platformAdmin = rawDb.platformAdmin!;
-  db.document = rawDb.document!;
-  db.documentChunk = rawDb.documentChunk!;
-  db.graphNode = rawDb.graphNode!;
-  db.graphEdge = rawDb.graphEdge!;
-  db.chat = rawDb.chat!;
-  db.llmProvider = rawDb.llmProvider!;
-  db.transaction = async (fn: any) => fn(db as Database);
-  return db as Database;
+
+  const db = { ...rawDb };
+  (db as any).transaction = async (fn: (db: Database) => Promise<unknown>) => fn(db as unknown as Database);
+  return db as unknown as Database;
 }
 
 // ── tests ───────────────────────────────────────────────────────────────────
@@ -234,8 +227,6 @@ describe("KnowledgeBase Service", () => {
   it("should mark document as failed on parse error", async () => {
     const kb = service.createKb({ ownerId: "user1", name: "KB", description: "", kbType: "private" });
 
-    // content is empty → parser should still work but let's test error path
-    // Actually, let's test by providing a bad file path without content
     await expect(
       service.importDocument(kb.id, {
         title: "missing.txt",
@@ -253,7 +244,6 @@ describe("KnowledgeBase Service", () => {
   it("should import a link-type document", async () => {
     const kb = service.createKb({ ownerId: "user1", name: "KB", description: "", kbType: "private" });
 
-    // Link documents are detected by sourceUrl presence
     const doc = await service.importDocument(kb.id, {
       title: "Example Page",
       sourceType: "link",

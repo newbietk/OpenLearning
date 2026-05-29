@@ -281,7 +281,7 @@ async function main() {
   // ── Step 4: Dedup ────────────────────────────────────────────────────────
   console.log("\n[4] Dedup — merging entities...");
   const nodeRecords: GraphNodeRecord[] = nodes.map((n) => ({
-    id: n.label, kbId: n.kbId, label: n.label, nodeType: n.nodeType,
+    id: n.label, kbId: (n as { kbId?: string }).kbId ?? "", label: n.label, nodeType: n.nodeType,
     sourceDocId: n.sourceDocId, metadata: n.metadata, createdAt: new Date().toISOString(),
   }));
   const { kept, remap } = deduplicateEntities(nodeRecords);

@@ -73,6 +73,7 @@ UI 设计请参考: `.reference/index.html`
 - 遵循 `skill: karpathy-guidelines` 开发准则
 - 方案设计、需求开发、bug 修复遵循 superpower 流程
 - 编写代码采用 TDD 范式（先写测试，再写实现）
+- 端到端验证采用 `skill: playwright-cli`，而不是 `npx playwright` 框架 
 - UI 设计采用 `skill: frontend-design`
 - 代码检索优先使用 `codegraph` 系列工具
 - 编写后必须检视、评审、修改，直到满足规范

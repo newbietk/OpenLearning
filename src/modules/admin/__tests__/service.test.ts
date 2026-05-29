@@ -11,34 +11,34 @@ function mockAdminDb(): Database {
 
   return {
     knowledgeBase: {
-      findById(id) { return kbs.find((k) => k.id === id); },
+      findById(id: string) { return kbs.find((k) => k.id === id); },
       findAll() { return [...kbs]; },
-      findByOwner(ownerId) { return kbs.filter((k) => k.ownerId === ownerId); },
-      findByType(kbType) { return kbs.filter((k) => k.kbType === kbType); },
-      create(data) {
+      findByOwner(ownerId: string) { return kbs.filter((k) => k.ownerId === ownerId); },
+      findByType(kbType: string) { return kbs.filter((k) => k.kbType === kbType); },
+      create(data: any) {
         const r: KnowledgeBaseRecord = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...data };
         kbs.push(r);
         return r;
       },
-      update(id, data) {
+      update(id: string, data: any) {
         const idx = kbs.findIndex((k) => k.id === id);
         if (idx !== -1) kbs[idx] = { ...kbs[idx], ...data };
         return kbs[idx];
       },
-      delete(id) {
+      delete(id: string) {
         const idx = kbs.findIndex((k) => k.id === id);
         if (idx !== -1) kbs.splice(idx, 1);
       },
     },
     platformAdmin: {
       findAll() { return [...admins]; },
-      findByExternalId(externalId) { return admins.find((a) => a.externalId === externalId); },
-      create(externalId) {
+      findByExternalId(externalId: string) { return admins.find((a) => a.externalId === externalId); },
+      create(externalId: string) {
         const r = { id: crypto.randomUUID(), externalId, createdAt: new Date().toISOString() };
         admins.push(r);
         return r;
       },
-      deleteByExternalId(externalId) {
+      deleteByExternalId(externalId: string) {
         const idx = admins.findIndex((a) => a.externalId === externalId);
         if (idx !== -1) admins.splice(idx, 1);
       },
@@ -84,7 +84,7 @@ function mockAdminDb(): Database {
       update: () => {},
       delete: () => {},
     },
-    transaction: async (fn: any) => fn(this as unknown as Database),
+    transaction: async (fn: any) => fn({} as Database),
   } as unknown as Database;
 }
 

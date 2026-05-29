@@ -1,6 +1,6 @@
 import type { Parser, ParseInput, ParseResult } from "../types";
 import { makeId, extractSymbols } from "./code";
-import { getLogger } from "../../lib/logger";
+import { getLogger } from "../../../lib/logger";
 
 // ============================================================================
 // Types
@@ -186,7 +186,7 @@ function resolveWasmDir(): string {
       const { dirname, join } = require("node:path");
       const moduleDir = dirname(fileURLToPath(import.meta.url));
       wasmDirPath = join(moduleDir, "wasm");
-      return wasmDirPath;
+      return wasmDirPath as string;
     } catch {
       // Fall through to cwd-based fallback
     }
@@ -196,7 +196,7 @@ function resolveWasmDir(): string {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { join } = require("node:path");
     wasmDirPath = join(process.cwd(), "src", "core", "pipeline", "parsers", "wasm");
-    return wasmDirPath;
+    return wasmDirPath as string;
   } catch {
     wasmDirPath = "";
     return "";
@@ -466,7 +466,7 @@ async function extractSymbolsTreeSitter(
     const parser = new ParserCtor() as {
       setLanguage: (lang: unknown) => void;
       parse: (code: string) => {
-        rootNode: unknown;
+        rootNode: { descendantForIndex: (idx: number) => unknown };
       };
       getLanguage: () => unknown;
     };

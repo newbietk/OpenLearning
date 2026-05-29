@@ -86,7 +86,7 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, []);
 
-    const node = result.nodes[0] as Record<string, unknown>;
+    const node = result.nodes[0] as unknown as Record<string, unknown>;
     expect(node.id).toBe("n1");
     expect(node.label).toBe("React");
     expect(node.file_type).toBe("markdown");
@@ -101,7 +101,7 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, []);
 
-    const node = result.nodes[0] as Record<string, unknown>;
+    const node = result.nodes[0] as unknown as Record<string, unknown>;
     expect(node.file_type).toBeUndefined();
     expect(node.source_file).toBeUndefined();
     expect(node.metadata).toEqual({ version: "18" });
@@ -124,7 +124,7 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, edges);
 
-    const link = result.links[0] as Record<string, unknown>;
+    const link = result.links[0] as unknown as Record<string, unknown>;
     expect(link.source).toBe("React");
     expect(link.target).toBe("Node.js");
     expect(link.relation).toBe("depends_on");
@@ -147,7 +147,7 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, edges);
 
-    const link = result.links[0] as Record<string, unknown>;
+    const link = result.links[0] as unknown as Record<string, unknown>;
     expect(link.source).toBe("Alpha");
     expect(link.target).toBe("Babel");
   });
@@ -163,8 +163,8 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, [], communities);
 
-    const node1 = result.nodes[0] as Record<string, unknown>;
-    const node2 = result.nodes[1] as Record<string, unknown>;
+    const node1 = result.nodes[0] as unknown as Record<string, unknown>;
+    const node2 = result.nodes[1] as unknown as Record<string, unknown>;
     expect(node1.community).toBe(0);
     expect(node2.community).toBe(1);
   });
@@ -176,7 +176,7 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, []);
 
-    const node = result.nodes[0] as Record<string, unknown>;
+    const node = result.nodes[0] as unknown as Record<string, unknown>;
     expect(node).not.toHaveProperty("community");
   });
 
@@ -190,8 +190,8 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, [], communities);
 
-    const node1 = result.nodes[0] as Record<string, unknown>;
-    const node2 = result.nodes[1] as Record<string, unknown>;
+    const node1 = result.nodes[0] as unknown as Record<string, unknown>;
+    const node2 = result.nodes[1] as unknown as Record<string, unknown>;
     expect(node1.community).toBe(0);
     expect(node2).not.toHaveProperty("community");
   });
@@ -222,7 +222,7 @@ describe("exportGraphJson", () => {
     const result = exportGraphJson(nodes, [], communities);
 
     // Should not crash; community not set on any node
-    const node = result.nodes[0] as Record<string, unknown>;
+    const node = result.nodes[0] as unknown as Record<string, unknown>;
     expect(node).not.toHaveProperty("community");
   });
 
@@ -266,11 +266,11 @@ describe("exportGraphJson", () => {
     const result = exportGraphJson(nodes, edges);
 
     // Mutating result should not affect inputs
-    (result.nodes[0] as Record<string, unknown>).extra = "mutated";
+    (result.nodes[0] as unknown as Record<string, unknown>).extra = "mutated";
     expect(nodes[0]).not.toHaveProperty("extra");
 
     // Self-loops (source === target) should still be exported for D3
-    const link = result.links[0] as Record<string, unknown>;
+    const link = result.links[0] as unknown as Record<string, unknown>;
     expect(link.source).toBe("React");
     expect(link.target).toBe("React");
   });
@@ -290,7 +290,7 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, edges);
 
-    const link = result.links[0] as Record<string, unknown>;
+    const link = result.links[0] as unknown as Record<string, unknown>;
     expect(link.source).toBe("C++");
     expect(link.target).toBe("Node.js");
   });
@@ -303,7 +303,7 @@ describe("exportGraphJson", () => {
 
     const result = exportGraphJson(nodes, []);
 
-    const node1 = result.nodes[0] as Record<string, unknown>;
+    const node1 = result.nodes[0] as unknown as Record<string, unknown>;
     expect(node1.label).toBe("机器学习");
   });
 });

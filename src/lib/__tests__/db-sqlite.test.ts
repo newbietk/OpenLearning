@@ -59,7 +59,7 @@ describe('SqliteDatabase (sql.js)', () => {
     const kb = db.knowledgeBase.create({ ownerId: 'u1', name: 'KB', description: '', kbType: 'private' });
     const doc = db.document.create({
       kbId: kb.id, title: 'doc1', sourceType: 'file',
-      sourceUrl: null, filePath: '/tmp/test.txt', fileSize: 1024, status: 'pending', errorMessage: null,
+      sourceUrl: null, filePath: '/tmp/test.txt', fileSize: 1024, status: 'pending', errorMessage: null, parsedAt: null,
     });
     expect(doc.id).toBeDefined();
 
@@ -72,7 +72,7 @@ describe('SqliteDatabase (sql.js)', () => {
     const kb = db.knowledgeBase.create({ ownerId: 'u1', name: 'KB', description: '', kbType: 'private' });
     const doc = db.document.create({
       kbId: kb.id, title: 'doc1', sourceType: 'text',
-      sourceUrl: null, filePath: null, fileSize: null, status: 'pending', errorMessage: null,
+      sourceUrl: null, filePath: null, fileSize: null, status: 'pending', errorMessage: null, parsedAt: null,
     });
     db.documentChunk.batchCreate([
       { docId: doc.id, chunkIndex: 0, contentText: 'chunk A', tokenCount: 10 },

@@ -27,7 +27,11 @@ function getDbPath(): string {
 }
 
 async function loadDatabase(): Promise<SqlJsDatabase> {
-  const SQL = await initSqlJs();
+  const SQL = await initSqlJs({
+    locateFile: () => {
+      return path.join(process.cwd(), "node_modules", "sql.js", "dist", "sql-wasm.wasm");
+    },
+  });
   if (fs.existsSync(getDbPath())) {
     const buffer = fs.readFileSync(getDbPath());
     return new SQL.Database(buffer);
@@ -117,12 +121,24 @@ export async function createSqliteDatabase(): Promise<IDatabase> {
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
 
+  function toCamelCase(str: string): string {
+    return str.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase());
+  }
+
+  function mapKeys<T>(row: Record<string, unknown>): T {
+    const result: Record<string, unknown> = {};
+    for (const key of Object.keys(row)) {
+      result[toCamelCase(key)] = row[key];
+    }
+    return result as T;
+  }
+
   function query<T = any>(sql: string, params: any[] = []): T[] {
     const stmt = sqldb.prepare(sql);
     stmt.bind(params);
     const rows: T[] = [];
     while (stmt.step()) {
-      rows.push(stmt.getAsObject() as T);
+      rows.push(mapKeys<T>(stmt.getAsObject() as Record<string, unknown>));
     }
     stmt.free();
     return rows;
@@ -138,7 +154,7 @@ export async function createSqliteDatabase(): Promise<IDatabase> {
   }
 
   function now(): string {
-    return new Date().toISOString().replace('T', ' ').slice(0, 19);
+    return new Date().toISOString();
   }
 
   const database: IDatabase = {
@@ -230,26 +246,26 @@ export async function createSqliteDatabase(): Promise<IDatabase> {
 
     graphNode: {
       findByKbId(kbId) {
-        return query<GraphNodeRecord>('SELECT *, json(metadata) as metadata FROM graph_nodes WHERE kb_id = ?', [kbId])
-          .map(parseNodeMeta);
+        return query<Record<string, unknown>>('SELECT *, json(metadata) as metadata FROM graph_nodes WHERE kb_id = ?', [kbId])
+          .map((r: Record<string, unknown>) => parseNodeMeta(r) as unknown as GraphNodeRecord);
       },
       findByLabel(kbId, label) {
-        const rows = query<GraphNodeRecord>('SELECT *, json(metadata) as metadata FROM graph_nodes WHERE kb_id = ? AND label = ?', [kbId, label])
-          .map(parseNodeMeta);
+        const rows = query<Record<string, unknown>>('SELECT *, json(metadata) as metadata FROM graph_nodes WHERE kb_id = ? AND label = ?', [kbId, label])
+          .map((r: Record<string, unknown>) => parseNodeMeta(r) as unknown as GraphNodeRecord);
         return rows[0];
       },
       findNeighbors(nodeId, kbId) {
         const edges = query<{target_node_id: string}>('SELECT DISTINCT target_node_id FROM graph_edges WHERE kb_id = ? AND source_node_id = ?', [kbId, nodeId]);
         if (edges.length === 0) return [];
         const ids = edges.map(e => `'${e.target_node_id}'`).join(',');
-        return query<GraphNodeRecord>(`SELECT *, json(metadata) as metadata FROM graph_nodes WHERE id IN (${ids})`)
-          .map(parseNodeMeta);
+        return query<Record<string, unknown>>(`SELECT *, json(metadata) as metadata FROM graph_nodes WHERE id IN (${ids})`)
+          .map((r: Record<string, unknown>) => parseNodeMeta(r) as unknown as GraphNodeRecord);
       },
       search(kbId, queryTerm) {
-        return query<GraphNodeRecord>(
+        return query<Record<string, unknown>>(
           `SELECT *, json(metadata) as metadata FROM graph_nodes WHERE kb_id = ? AND (label LIKE ? OR node_type LIKE ?) LIMIT 20`,
           [kbId, `%${queryTerm}%`, `%${queryTerm}%`]
-        ).map(parseNodeMeta);
+        ).map((r: Record<string, unknown>) => parseNodeMeta(r) as unknown as GraphNodeRecord);
       },
       batchCreate(nodes): GraphNodeRecord[] {
         const result: GraphNodeRecord[] = [];
@@ -354,7 +370,7 @@ export async function createSqliteDatabase(): Promise<IDatabase> {
   return database;
 }
 
-function parseNodeMeta(row: any): GraphNodeRecord {
-  const meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata ?? {});
+function parseNodeMeta(row: Record<string, unknown>): Record<string, unknown> {
+  const meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata as string) : (row.metadata ?? {});
   return { ...row, metadata: meta };
 }
